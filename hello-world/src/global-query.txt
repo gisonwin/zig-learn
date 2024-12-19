@@ -1,0 +1,570 @@
+---------------------------
+SELECT
+	* 
+FROM
+	G_TEST_PACKAGE 
+WHERE
+	SATELLITE_GUID = ( SELECT SATELITE_GUID FROM G_SATELITE WHERE SATELITE_SERIALNUM = 65537 ) 
+	AND STATION_GUID = 8255371058967674880 
+	AND STAGE_ID = 2901 
+	AND DEFAULT_FLAG = 1;
+
+-----------------------
+SELECT 
+DISTINCT
+( SELECT SATELITE_GUID FROM G_SATELITE WHERE SATELITE_SERIALNUM =65537 ) SATELLITE_GUID ,
+	gd.DEVICE_GUID,
+-- 	gc.CHANNEL_GUID,
+	gd.DEVICE_CODE,
+	gd.DEVICE_NAME,
+	gd.DEVICE_NO,
+	gd.DEVICE_CHANNEL_COUNT,
+-- 	gc.CHANNEL_NAME,
+	gcad.dev_guid,
+	gdd.DRIVER_NAME
+	
+FROM
+	(select abstract_dev_code,CHANNEL_CODE,CARD_CODE from G_DEVPACKAGE_CMD_CONFIG where test_package_id = 8256759385327337472 union all
+select abstract_dev_code,CHANNEL_CODE,CARD_CODE  from G_DEVPACKAGE_PARAM_CONFIG where test_package_id = 8256759385327337472 union all
+select abstract_dev_code,CHANNEL_CODE,CARD_CODE  from G_DEVPACKAGE_DEVICE_CONFIG where test_package_id = 8256759385327337472
+	) as  cs,
+	G_DEVICE gd,
+-- 	G_CHANNEL gc,
+	G_CONFIG_ABSTRACT_DEV gcad ,
+	G_DEVICE_DRIVER gdd
+WHERE
+	gd.STATION_ID = 8255371058967674880 
+	AND  cs.ABSTRACT_DEV_CODE = gcad.ABSTRACT_DEV_CODE 
+	--AND cs.DEV_CMD_CODE= gd.DEVICE_CODE 
+	AND  cs.CHANNEL_CODE = gcad.CHANNEL_CODE
+-- 	AND gcad.ABSTRACT_DEV_CODE = cs.ABSTRACT_DEV_CODE
+	AND gcad.dev_guid = gd.device_guid
+	AND gdd.DRIVER_GUID = gcad.DRIVER_GUID
+-- 	AND gc.channel_code = cs.channel_code
+
+	
+select 
+distinct device.*,dev.DRIVER_GUID,gdd.DRIVER_NAME
+from 
+G_CONFIG_ABSTRACT_DEV dev,(
+--用设备包取业务设备
+select abstract_dev_code,CHANNEL_CODE,CARD_CODE from G_DEVPACKAGE_CMD_CONFIG where test_package_id = 8256759385327337472 union all
+select abstract_dev_code,CHANNEL_CODE,CARD_CODE  from G_DEVPACKAGE_PARAM_CONFIG where test_package_id = 8256759385327337472 union all
+select abstract_dev_code,CHANNEL_CODE,CARD_CODE  from G_DEVPACKAGE_DEVICE_CONFIG where test_package_id = 8256759385327337472) as abs_dev,
+G_DEVICE device ,
+G_DEVICE_DRIVER gdd
+where dev.STATION_ID = 8255371058967674880 
+and  abs_dev.ABSTRACT_DEV_CODE = dev.ABSTRACT_DEV_CODE 
+and abs_dev.CHANNEL_CODE = dev.CHANNEL_CODE 
+and dev.DEV_GUID = device.DEVICE_GUID
+and gdd.driver_guid = dev.DRIVER_GUID;
+
+
+
+select * from G_DEVPACKAGE_CMD_CONFIG where test_package_id = 8256759385327337472;
+select * from G_CHANNEL where CHANNEL_GUID=8256486048197967872 ;
+select * from G_ABSTRACT_DEVICE;
+select * from G_CONFIG_ABSTRACT_DEV;
+select * from G_DEVICE_DRIVER gdd where gdd.DRIVER_GUID = 8255336714756620288;
+select * from G_DEVICE gd;
+select * from G_DEVICE_CLASS gdc;
+
+
+SELECT
+	( SELECT SATELITE_GUID FROM G_SATELITE WHERE SATELITE_SERIALNUM = 65537 ) SATELLITE_GUID,
+	gad.ABSTRACT_DEV_GUID,
+	d.DEVICE_CODE,
+	d.DEVICE_NAME,
+	d.DEVICE_NO,
+	d.DEVICE_CHANNEL_COUNT,
+	gc.CHANNEL_NAME,
+	gc.CHANNEL_GUID,
+	d.DEVICE_GUID 
+FROM
+	dbo.G_DEVPACKAGE_CMD_CONFIG cs,
+	G_DEVICE d,
+	G_CHANNEL gc,
+	G_ABSTRACT_DEVICE gad 
+WHERE
+	cs.TEST_PACKAGE_ID= (
+	SELECT
+		TEST_PACKAGE_ID 
+	FROM
+		G_TEST_PACKAGE 
+	WHERE
+		SATELLITE_GUID = ( SELECT SATELITE_GUID FROM G_SATELITE WHERE SATELITE_SERIALNUM = 65537 ) 
+		AND STATION_GUID = 8255371058967674880 
+		AND STAGE_ID = 2901 
+		AND DEFAULT_FLAG = 1 
+	) 
+	AND cs.DEV_CMD_CODE= d.DEVICE_CODE 
+	AND gad.ABSTRACT_DEV_CODE= cs.ABSTRACT_DEV_CODE 
+	AND gc.CHANNEL_CODE= cs.CHANNEL_CODE 
+	AND d.DRIVER_GUID IN ( SELECT DRIVER_GUID FROM G_DEVICE_DRIVER WHERE CLASS_GUID = ( SELECT guid FROM G_DEVICE_CLASS WHERE CLASS_CODE = 'TC' ) )
+	
+	select * from G_DEVICE_DRIVER;
+	select * from G_DEVICE_CLASS;
+	select * from G_DICTIONARY_CLASS;
+	select * from G_DICTIONARY;
+	
+	select * from g_dictionary_class where DIC_CLASS_VALUE = 30;
+select * from G_DICTIONARY where DIC_CLASS_GUID = 8255065644992495616;
+
+
+
+
+	---jiang zhenting 
+select 
+c.*,
+d.* 
+from 
+g_dictionary a,
+g_dictionary_class b,
+g_device_driver c,
+G_DEVICE d
+where 
+b.DIC_CLASS_VALUE=30 
+and a.dic_class_guid = b.dic_class_guid 
+and a.ENUM_CODE in('TC','TM')
+and c.CLASS_GUID = a.ENUM_GUID
+and (d.DRIVER_GUID = c.DRIVER_GUID or d.DRIVER_GUID2 = c.DRIVER_GUID or d.DRIVER_GUID3 = c.DRIVER_GUID);	
+	
+------查找 tc下设备相关对象
+
+SELECT
+	( SELECT SATELITE_GUID FROM G_SATELITE WHERE SATELITE_SERIALNUM = 65537 ) SATELLITE_GUID,
+	gd.DEVICE_GUID,
+	gd.DEVICE_CODE,
+	gd.DEVICE_NAME,
+	gd.DEVICE_NO,
+	gd.DEVICE_CHANNEL_COUNT,
+	gcad.guid as abstract_dev_guid,
+	gcad.dev_guid,
+	gdd.DRIVER_NAME 
+FROM
+	(
+	SELECT
+		abstract_dev_code,
+		CHANNEL_CODE,
+		CARD_CODE 
+	FROM
+		G_DEVPACKAGE_CMD_CONFIG 
+	WHERE
+		test_package_id = 8256759385327337472 UNION ALL
+	SELECT
+		abstract_dev_code,
+		CHANNEL_CODE,
+		CARD_CODE 
+	FROM
+		G_DEVPACKAGE_PARAM_CONFIG 
+	WHERE
+		test_package_id = 8256759385327337472 UNION ALL
+	SELECT
+		abstract_dev_code,
+		CHANNEL_CODE,
+		CARD_CODE 
+	FROM
+		G_DEVPACKAGE_DEVICE_CONFIG 
+	WHERE
+		test_package_id = 8256759385327337472 
+	) AS cs,
+	G_DEVICE gd,
+	G_CONFIG_ABSTRACT_DEV gcad,
+	G_DEVICE_DRIVER gdd,
+	g_dictionary a,
+	g_dictionary_class b,
+	g_device_driver c 
+WHERE
+	gd.STATION_ID = 8255371058967674880 
+	AND cs.ABSTRACT_DEV_CODE = gcad.ABSTRACT_DEV_CODE 
+	AND cs.CHANNEL_CODE = gcad.CHANNEL_CODE 
+	AND gcad.dev_guid = gd.device_guid 
+	AND gdd.DRIVER_GUID = gcad.DRIVER_GUID 
+	AND b.DIC_CLASS_VALUE= 30 
+	AND a.dic_class_guid = b.dic_class_guid 
+	AND a.ENUM_CODE = 'TC' 
+	AND c.CLASS_GUID = a.ENUM_GUID 
+	AND ( gd.DRIVER_GUID = c.DRIVER_GUID OR gd.DRIVER_GUID2 = c.DRIVER_GUID OR gd.DRIVER_GUID3 = c.DRIVER_GUID );
+	
+	
+	-------
+	select * from G_CONFIG_ABSTRACT_DEV
+	--------------------
+SELECT DISTINCT
+	( SELECT SATELITE_GUID FROM G_SATELITE WHERE SATELITE_SERIALNUM = 65537 ) SATELITE_GUID,
+	cs.ABSTRACT_DEV_CODE,
+	d.DEVICE_GUID DEV_GUID,
+--gc.CHANNEL_GUID,
+	d.DEVICE_GUID,
+	d.DRIVER_GUID,
+	d.DEVICE_CHANNEL_COUNT,
+	d.DEVICE_CARD_COUNT,
+	d.DEVICE_NAME,
+	d.DEVICE_CODE,
+	d.DEVICE_NO,
+	gc.CHANNEL_CODE ,
+	gdd.DRIVER_NAME 
+FROM
+	(
+	SELECT
+		abstract_dev_code,
+		CHANNEL_CODE,
+		CARD_CODE 
+	FROM
+		G_DEVPACKAGE_CMD_CONFIG 
+	WHERE
+		test_package_id = 8256759385327337472 UNION ALL
+	SELECT
+		abstract_dev_code,
+		CHANNEL_CODE,
+		CARD_CODE 
+	FROM
+		G_DEVPACKAGE_PARAM_CONFIG 
+	WHERE
+		test_package_id = 8256759385327337472 UNION ALL
+	SELECT
+		abstract_dev_code,
+		CHANNEL_CODE,
+		CARD_CODE 
+	FROM
+		G_DEVPACKAGE_DEVICE_CONFIG 
+	WHERE
+		test_package_id = 8256759385327337472 
+	) AS cs,
+	G_DEVICE d,
+	G_CONFIG_ABSTRACT_DEV gcad,
+	G_CHANNEL gc,
+	G_DEVICE_DRIVER gdd,
+	g_dictionary a,
+	g_dictionary_class b,
+	g_device_driver c 
+WHERE
+	d.STATION_ID = 8255371058967674880 
+	AND cs.ABSTRACT_DEV_CODE = gcad.ABSTRACT_DEV_CODE 
+	AND cs.CHANNEL_CODE = gcad.CHANNEL_CODE 
+	AND gc.CHANNEL_CODE = cs.CHANNEL_CODE
+	AND gcad.dev_guid = d.device_guid 
+	AND gdd.DRIVER_GUID = gcad.DRIVER_GUID 
+	AND b.DIC_CLASS_VALUE= 30 
+	AND a.dic_class_guid = b.dic_class_guid 
+	--AND a.ENUM_CODE = 'TC' 
+	AND c.CLASS_GUID = a.ENUM_GUID 
+	AND ( d.DRIVER_GUID = c.DRIVER_GUID OR d.DRIVER_GUID2 = c.DRIVER_GUID OR d.DRIVER_GUID3 = c.DRIVER_GUID );
+	
+--根据卫星id 查询其对应的所有卫星对象，卫星指令，卫星指令的参数 其对应的业务设备，业务设备通道个数，在哪个通道，以及物理设备名称，设备code以及设备资产编号	
+--------------
+SELECT DISTINCT
+	gs.SATELITE_GUID,
+	gs.PARENT_GUID,
+	gs.SATELITE_NAME,
+	gs.SATELITE_CODE,
+	gs.SATELITE_SERIALNUM,
+	gdcd.DEV_CMD_CODE,
+	gdcd.SATELITE_CMD_CODE,
+	gdcd.GUID,
+	gdcd.PARAM1,
+	gdcd.PARAM2,
+	gdcd.PARAM3,
+	gdcd.PARAM4,
+	gdcd.PARAM5,
+	gdcd.PARAM6,
+	gdcd.PARAM7,
+	gdcd.PARAM8,
+	gdcd.PARAM9,
+	gdcd.PARAM10,
+	gad.ABSTRACT_DEV_GUID,
+	gad.CLASS_GUID,
+	gad.ABSTRACT_DEV_NAME,
+	gad.ABSTRACT_DEV_CHANNEL_COUNT,
+	gad.ABSTRACT_DEV_CARD_COUNT,
+	gad.ABSTRACT_DEV_CHANNEL_NO,
+	gcl.CHANNEL_NAME,
+	gcs.DEV_GUID,
+	gcs.DEV_CHANNEL_GUID,
+	gcs.DEV_CARD_GUID,
+	gd.DEVICE_GUID,
+	gd.DRIVER_GUID,
+	gd.DEVICE_NAME,
+	gd.DEVICE_CODE,
+	gd.DEVICE_NO,
+	gd.DEVICE_FAC,
+	gd.DEVICE_CHANNEL_COUNT,
+	gd.DEVICE_CARD_COUNT,
+	gd.DEVICE_CHANNEL_NO
+	--gc.CARD_GUID 
+FROM
+	G_DEVPACKAGE_CMD_CONFIG gdcd,
+	G_ABSTRACT_DEVICE gad,
+	G_CONFIG_ABSTRACT_DEV gcs,
+	G_DEVICE gd,
+	G_SATELITE gs,
+	G_TEST_PACKAGE tp,
+	G_CARD gc,
+	G_CHANNEL gcl 
+WHERE
+	gdcd.TEST_PACKAGE_ID= (
+	SELECT
+		TEST_PACKAGE_ID 
+	FROM
+		G_TEST_PACKAGE 
+	WHERE
+		SATELLITE_GUID = ( SELECT SATELITE_GUID FROM G_SATELITE WHERE SATELITE_SERIALNUM =65537 ) 
+		AND STATION_GUID = 8255371058967674880
+		AND STAGE_ID = 2901 
+		AND DEFAULT_FLAG = 1 
+	) 
+	AND gcs.DEV_GUID = gd.DEVICE_GUID 
+	AND gad.ABSTRACT_DEV_CODE = gcs.ABSTRACT_DEV_CODE 
+	AND gs.SATELITE_GUID = tp.SATELLITE_GUID 
+	AND gdcd.CHANNEL_CODE= gcl.CHANNEL_CODE
+	--AND gc.CARD_CODE = gcs.CARD_CODE 
+	
+	----------------------------
+	SELECT DISTINCT
+ gs.SATELITE_GUID,
+ gs.PARENT_GUID,
+ gs.SATELITE_NAME,
+ gs.SATELITE_CODE,
+ gs.SATELITE_SERIALNUM,
+ gdcd.DEV_CMD_CODE,
+ gdcd.SATELITE_CMD_CODE,
+ gdcd.GUID,
+ gdcd.PARAM1,
+ gdcd.PARAM2,
+ gdcd.PARAM3,
+ gdcd.PARAM4,
+ gdcd.PARAM5,
+ gdcd.PARAM6,
+ gdcd.PARAM7,
+ gdcd.PARAM8,
+ gdcd.PARAM9,
+ gdcd.PARAM10,
+ gad.ABSTRACT_DEV_GUID,
+ gad.CLASS_GUID,
+ gad.ABSTRACT_DEV_NAME,
+ gad.ABSTRACT_DEV_CHANNEL_COUNT,
+ gad.ABSTRACT_DEV_CARD_COUNT,
+ gad.ABSTRACT_DEV_CHANNEL_NO,
+ gcl.CHANNEL_NAME,
+ gcs.DEV_GUID,
+ gcs.DEV_CHANNEL_GUID,
+ gcs.DEV_CARD_GUID,
+ gd.DEVICE_GUID,
+ gd.DRIVER_GUID,
+ gd.DEVICE_NAME,
+ gd.DEVICE_CODE,
+ gd.DEVICE_NO,
+ gd.DEVICE_FAC,
+ gd.DEVICE_CHANNEL_COUNT,
+ gd.DEVICE_CARD_COUNT,
+ gd.DEVICE_CHANNEL_NO
+ --gc.CARD_GUID 
+FROM
+ G_DEVPACKAGE_CMD_CONFIG gdcd,
+ G_ABSTRACT_DEVICE gad,
+ G_CONFIG_ABSTRACT_DEV gcs,
+ G_DEVICE gd,
+ G_SATELITE gs,
+ G_TEST_PACKAGE tp,
+--  G_CARD gc,
+ G_CHANNEL gcl 
+WHERE
+ gdcd.TEST_PACKAGE_ID= tp.TEST_PACKAGE_ID
+ and tp.SATELLITE_GUID = gs.SATELITE_GUID
+ and gs.SATELITE_SERIALNUM =65537
+ AND tp.STATION_GUID = 8255371058967674880
+ AND tp.STAGE_ID = 2901 
+ AND tp.DEFAULT_FLAG = 1 
+ AND gcs.DEV_GUID = gd.DEVICE_GUID 
+ AND gad.ABSTRACT_DEV_CODE = gcs.ABSTRACT_DEV_CODE 
+ AND gs.SATELITE_GUID = tp.SATELLITE_GUID 
+ AND gdcd.CHANNEL_CODE= gcl.CHANNEL_CODE
+
+ order by gs.SATELITE_GUID,
+ gs.PARENT_GUID,
+ gs.SATELITE_NAME,
+ gs.SATELITE_CODE,
+ gs.SATELITE_SERIALNUM,
+ gdcd.DEV_CMD_CODE,
+ gdcd.SATELITE_CMD_CODE
+	
+	
+	
+------------------------------------------------------	
+---根据卫星 guid 和 指令 查找 卫星和指令对应的物理设备的属性和参数值，及其类型
+SELECT DISTINCT
+	( SELECT SATELITE_GUID FROM G_SATELITE WHERE SATELITE_SERIALNUM = 65537 ) SATELITE_GUID,
+	dcd.SATELITE_CMD_CODE,
+	dcd.DEV_CMD_CODE,
+	dcd.PARAM1,
+	dcd.PARAM2,
+	dcd.PARAM3,
+	dcd.PARAM4,
+	dcd.PARAM5,
+	dcd.PARAM6,
+	dcd.PARAM7,
+	dcd.PARAM8,
+	dcd.PARAM9,
+	dcd.PARAM10,
+	absdevice.ABSTRACT_DEV_GUID,
+	--gc.CHANNEL_NAME,
+	gc.CHANNEL_CODE,
+	gdcp.VALUE_TYPE,
+	gdcp.CMDPARAM_NAME,
+	gdcp.CMDPARAM_CODE,
+	dic.ENUM_KEY 
+FROM
+	dbo.G_DEVPACKAGE_CMD_CONFIG dcd,
+	G_DICTIONARY dic,
+	G_CHANNEL gc,
+	G_DRIVER_CMD_PARAM gdcp,
+	G_ABSTRACT_DEVICE absdevice 
+WHERE
+	dcd.TEST_PACKAGE_ID= (
+	SELECT
+		TEST_PACKAGE_ID 
+	FROM
+		G_TEST_PACKAGE 
+	WHERE
+		SATELLITE_GUID = ( SELECT SATELITE_GUID FROM G_SATELITE WHERE SATELITE_SERIALNUM = 65537 ) 
+		AND STATION_GUID = 8255371058967674880 
+		AND STAGE_ID = 2901 
+		AND DEFAULT_FLAG = 1 
+	) 
+ 	AND dcd.SATELITE_CMD_CODE= 'GCA00001' 
+	AND dcd.ABSTRACT_DEV_CODE = absdevice.ABSTRACT_DEV_CODE 
+	AND dcd.CHANNEL_CODE = gc.CHANNEL_CODE 
+	AND gdcp.CMD_GUID IN ( SELECT DISTINCT CMD_GUID FROM G_DRIVER_CMD a, G_DEVPACKAGE_CMD_CONFIG c WHERE a.CMD_CODE= c.DEV_CMD_CODE ) 
+	AND gdcp.VALUE_TYPE= dic.ENUM_VALUE
+	
+------------- 业务设备 g_abstract_device  业务设备映射表 g_config_abstract_device  设备表 g_device
+select * from g_abstract_device where --abstract_dev_code = 'TM01' and
+STATION_ID = 8255371058967674880
+
+select * from g_config_abstract_dev 
+where 
+station_id = 8255371058967674880 and abstract_dev_code = 'TM01';
+-----------------------
+--根据卫星id 等  以及 卫星指令  查找 物理设备
+SELECT DISTINCT ( SELECT SATELITE_GUID FROM G_SATELITE WHERE SATELITE_SERIALNUM = 65537 ) SATELITE_GUID,    
+                dcd.SATELITE_CMD_CODE,    
+                dcd.DEV_CMD_CODE,    
+                dcd.PARAM1,    
+                dcd.PARAM2,    
+                dcd.PARAM3,    
+                dcd.PARAM4,    
+                dcd.PARAM5,    
+                dcd.PARAM6,    
+                dcd.PARAM7,    
+                dcd.PARAM8,    
+                dcd.PARAM9,    
+                dcd.PARAM10,    
+                absdevice.ABSTRACT_DEV_GUID,    
+                gc.CHANNEL_CODE,    
+                gdcp.VALUE_TYPE,    
+                gdcp.CMDPARAM_NAME,    
+                gdcp.CMDPARAM_CODE,    
+                dic.ENUM_KEY     
+           FROM    
+                dbo.G_DEVPACKAGE_CMD_CONFIG dcd,    
+                G_DICTIONARY dic,    
+                G_CHANNEL gc,    
+                G_DRIVER_CMD_PARAM gdcp,    
+                G_ABSTRACT_DEVICE absdevice     
+           WHERE    
+                dcd.TEST_PACKAGE_ID= (    
+                SELECT    
+                TEST_PACKAGE_ID     
+                FROM    
+                G_TEST_PACKAGE     
+                WHERE    
+                SATELLITE_GUID = ( SELECT SATELITE_GUID FROM G_SATELITE WHERE SATELITE_SERIALNUM = 65537 )     
+                AND STATION_GUID = 8255371058967674880     
+                AND STAGE_ID = 2901     
+                AND DEFAULT_FLAG = 1     
+                )     
+                AND dcd.SATELITE_CMD_CODE= 'GCA00001'     
+                AND dcd.ABSTRACT_DEV_CODE = absdevice.ABSTRACT_DEV_CODE     
+                AND dcd.CHANNEL_CODE = gc.CHANNEL_CODE     
+                AND gdcp.CMD_GUID IN ( SELECT DISTINCT CMD_GUID FROM G_DRIVER_CMD a, G_DEVPACKAGE_CMD_CONFIG c WHERE a.CMD_CODE= c.DEV_CMD_CODE )     
+                AND gdcp.VALUE_TYPE= dic.ENUM_VALUE
+								
+								-------step 1
+SELECT
+	TEST_PACKAGE_ID 
+FROM
+	G_TEST_PACKAGE 
+WHERE
+	SATELLITE_GUID = ( SELECT SATELITE_GUID FROM G_SATELITE WHERE SATELITE_SERIALNUM = 65537 ) 
+	AND STATION_GUID = 8255371058967674880 
+	AND STAGE_ID = 2901 
+	AND DEFAULT_FLAG = 1
+	
+	----step 2 8256759385327337472
+SELECT DISTINCT
+	gdcc.SATELITE_CMD_CODE,
+	gdcc.ABSTRACT_DEV_CODE,
+	gdcc.CHANNEL_CODE,
+	gdcc.DEV_CMD_CODE,
+	gdcc.DEV_CMD_NAME,
+	gdcc.Param1,
+	gdcc.Param2,
+	gdcc.Param3,
+	gdcc.Param4,
+	gdcc.Param5,
+	gdcc.Param6,
+	gdcc.Param7,
+	gdcc.Param8,
+	gdcc.Param9,
+	gdcc.Param10,
+	dev.DEVICE_CODE,
+	gdd.DRIVER_GUID,
+	gdd.DRIVER_NAME ,
+	gdcp.VALUE_TYPE,
+	gdcp.CMDPARAM_CODE 
+FROM
+	G_DEVPACKAGE_CMD_CONFIG gdcc,
+	g_device dev,
+	g_config_abstract_dev absdev,
+	G_DEVICE_DRIVER gdd,
+	G_DRIVER_CMD_PARAM gdcp,
+	G_DRIVER_CMD gdc 
+WHERE
+	gdcc.TEST_PACKAGE_ID= (
+	SELECT
+		TEST_PACKAGE_ID 
+	FROM
+		G_TEST_PACKAGE 
+	WHERE
+		SATELLITE_GUID = ( SELECT SATELITE_GUID FROM G_SATELITE WHERE SATELITE_SERIALNUM = 65537 ) 
+		AND STATION_GUID = 8255371058967674880 
+		AND STAGE_ID = 2901 
+		AND DEFAULT_FLAG = 1 
+	) 
+	AND gdcc.SATELITE_CMD_CODE = 'GCA00001' 
+	AND absdev.station_id = 8255371058967674880 
+	AND gdcc.ABSTRACT_DEV_CODE = absdev.ABSTRACT_DEV_CODE 
+	AND dev.device_guid = absdev.DEV_GUID 
+	AND dev.DRIVER_GUID = gdd.DRIVER_GUID 
+	AND gdcc.DEV_CMD_CODE= gdc.CMD_CODE 
+	AND gdcp.CMD_GUID = gdc.cmd_guid
+
+
+	
+	---step3 PCode1
+select * from G_DEVPACKAGE_CMD_CONFIG where TEST_PACKAGE_ID=8256759385327337472
+8255364189943431168
+select * from G_DR
+
+
+
+select gdcp.CMDPARAM_CODE,gdcp.VAlUE_TYPE  from G_DRIVER_CMD_PARAM gdcp where CMD_GUID =(select cmd_guid from G_DRIVER_CMD where CMD_CODE='ConnectEquipment')
+
+----  8256759385327337472
+SELECT 
+--DISTINCT CMD_GUID 
+a.*,'',c.* FROM G_DRIVER_CMD a, G_DEVPACKAGE_CMD_CONFIG c WHERE a.CMD_CODE= c.DEV_CMD_CODE and c.TEST_PACKAGE_ID=8256759385327337472 and c.DEV_CMD_CODE='ConnectEquipment'
+
+
+select distinct gdp.PARAM_CODE,gdp.PARAM_NAME from G_DRIVER_PARAM gdp
+select * from G_DEVPACKAGE_DEVICE_CONFIG
